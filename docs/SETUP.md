@@ -609,3 +609,60 @@ def get_tasks(
     return tasks
 
 ##Example: /tasks?skip=0&limit=5.
+
+# Step 36 — Create Dockerfile
+In the project root, add a file named `Dockerfile`:
+
+```dockerfile
+FROM python:3.11
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+This installs Python, dependencies, copies your project, and runs FastAPI.
+
+## Step 37 — Create docker-compose.yml
+In the project root, add docker-compose.yml:
+
+yaml
+version: '3.9'
+
+services:
+  backend:
+    build: .
+    container_name: taskflow_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  db:
+    image: postgres:15
+    container_name: taskflow_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: taskflow_db
+    ports:
+      - "5432:5432"
+## Step 38 — Adjust .env
+Replace your DATABASE_URL with:
+
+Código
+DATABASE_URL=postgresql://postgres:postgres@db/taskflow_db
+
+## Use db (the Docker service name), not localhost.
+
+Step 57 — Freeze requirements
+bash
+pip freeze > requirements.txt
+Step 58 — Run Docker
+bash
+docker-compose up --build
+## First time may take longer.

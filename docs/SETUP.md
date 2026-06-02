@@ -659,10 +659,95 @@ DATABASE_URL=postgresql://postgres:postgres@db/taskflow_db
 
 ## Use db (the Docker service name), not localhost.
 
-Step 57 — Freeze requirements
+## Step 39 — Freeze requirements
 bash
 pip freeze > requirements.txt
-Step 58 — Run Docker
+## Step 40 — Run Docker
 bash
 docker-compose up --build
 ## First time may take longer.
+
+Alembic Migration Workflow (Professional Setup)
+## Step 41 — Initialize Alembic
+In terminal:
+
+bash
+alembic init alembic
+This creates:
+
+alembic/
+
+alembic.ini
+
+## Step 42 — Configure alembic.ini
+Find:
+
+ini
+sqlalchemy.url =
+Replace with:
+
+ini
+sqlalchemy.url = postgresql://postgres:postgres@db/taskflow_db
+
+## Use localhost if running outside Docker.
+
+## Step 43 — Configure env.py
+Open:
+
+bash
+alembic/env.py
+Find:
+
+python
+target_metadata = None
+Replace with:
+
+python
+from app.db.database import Base
+from app.models.user import User
+from app.models.team import Team
+from app.models.task import Task
+
+target_metadata = Base.metadata
+## Step 44 — Remove create_all
+In:
+
+bash
+app/main.py
+Delete:
+
+python
+Base.metadata.create_all(bind=engine)
+
+## Alembic now manages schema creation.
+
+## Step 45 — Create Initial Migration
+Run:
+
+bash
+alembic revision --autogenerate -m "initial migration"
+Alembic will detect:
+
+users
+
+teams
+
+tasks
+
+and generate a migration file in alembic/versions/.
+
+## Step 46 — Apply Migration
+Run:
+
+bash
+alembic upgrade head
+
+## Tables are created officially via migrations.
+
+## Step 47 — Verify Tables
+In PostgreSQL:
+
+sql
+\dt
+SELECT * FROM alembic_version;
+## If you see a version number (e.g., 6dc2c5bfec12), Alembic is working correctly.

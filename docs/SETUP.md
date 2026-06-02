@@ -367,3 +367,245 @@ File: app/main.py
 python
 from app.routes.task import router as task_router
 app.include_router(task_router)
+
+## Step 26 — Improve get_current_user
+File: app/auth/dependencies.py  
+Replace the previous code with:
+
+python
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt, JWTError
+from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+import os
+
+from app.db.dependencies import get_db
+from app.models.user import User
+
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials"
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise credentials_exception
+
+    return user
+
+#Now the function returns the full User object instead of just the email.
+
+## Step 27 — Associate Tasks with Authenticated User
+File: app/routes/task.py  
+Update the create_task route:
+
+python
+from app.auth.dependencies import get_current_user
+from app.models.user import User
+
+@router.post("/")
+def create_task(
+    task: TaskCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    new_task = Task(
+        title=task.title,
+        description=task.description,
+        team_id=task.team_id,
+        owner_id=current_user.id
+    )
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
+    return new_task
+    
+#Each task is now automatically linked to the authenticated user.
+
+## Step 28 — Test Authentication
+Login and copy the token.
+
+In Swagger → Authorize → paste Bearer <your_token>.
+
+Create a team:
+
+json
+{
+  "name": "Backend Team"
+}
+Create a task:
+
+json
+{
+  "title": "Create API",
+  "description": "FastAPI project",
+  "team_id": 1
+}
+## The task will be stored with the owner_id of the authenticated user.
+
+## Step 29 — Verify in PostgreSQL
+Run:
+
+sql
+SELECT * FROM tasks;
+Expected output:
+
+Código
+ id | title      | description     | status   | team_id | owner_id
+----+------------+-----------------+----------+---------+---------
+  1 | Create API | FastAPI project | pending  |   1     |   2
+
+## You can see both team_id and owner_id, proving that tasks are linked to teams and users.
+
+## Step 30 — List Tasks
+File: app/routes/task.py  
+Add:
+
+python
+@router.get("/")
+def get_tasks(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    tasks = db.query(Task).filter(
+        Task.owner_id == current_user.id
+    ).all()
+    return tasks
+👉 Each user only sees their own tasks.
+
+## Step 31 — Get a Single Task
+File: app/routes/task.py  
+Add:
+
+python
+@router.get("/{task_id}")
+def get_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    task = db.query(Task).filter(
+        Task.id == task_id,
+        Task.owner_id == current_user.id
+    ).first()
+    if not task:
+        return {"error": "Task not found"}
+    return task
+👉 Ensures users can only access their own tasks.
+
+## Step 32 — Update a Task
+File: app/routes/task.py  
+Add:
+
+python
+@router.put("/{task_id}")
+def update_task(
+    task_id: int,
+    updated_task: TaskCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    task = db.query(Task).filter(
+        Task.id == task_id,
+        Task.owner_id == current_user.id
+    ).first()
+    if not task:
+        return {"error": "Task not found"}
+
+    task.title = updated_task.title
+    task.description = updated_task.description
+    task.team_id = updated_task.team_id
+
+    db.commit()
+    return {"message": "Task updated"}
+    
+##Users can only update their own tasks.
+
+## Step 33 — Delete a Task
+File: app/routes/task.py  
+Add:
+
+python
+@router.delete("/{task_id}")
+def delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    task = db.query(Task).filter(
+        Task.id == task_id,
+        Task.owner_id == current_user.id
+    ).first()
+    if not task:
+        return {"error": "Task not found"}
+
+    db.delete(task)
+    db.commit()
+    return {"message": "Task deleted"}
+
+## Users can only delete their own tasks.
+
+## Step 34 — Add Filters
+File: app/routes/task.py  
+Modify get_tasks:
+
+python
+from fastapi import Query
+
+@router.get("/")
+def get_tasks(
+    status: str = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Task).filter(Task.owner_id == current_user.id)
+
+    if status:
+        query = query.filter(Task.status == status)
+
+    tasks = query.all()
+    return tasks
+
+## Example: /tasks?status=pending.
+
+## Step 35 — Add Pagination
+File: app/routes/task.py  
+Modify get_tasks again:
+
+python
+@router.get("/")
+def get_tasks(
+    status: str = Query(None),
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Task).filter(Task.owner_id == current_user.id)
+
+    if status:
+        query = query.filter(Task.status == status)
+
+    tasks = query.offset(skip).limit(limit).all()
+    return tasks
+
+##Example: /tasks?skip=0&limit=5.

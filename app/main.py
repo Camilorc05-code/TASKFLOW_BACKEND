@@ -8,7 +8,6 @@ from app.models.task import Task
 from app.routes.team import router as team_router
 from app.routes.task import router as task_router
 
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

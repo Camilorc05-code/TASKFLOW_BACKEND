@@ -751,3 +751,75 @@ sql
 \dt
 SELECT * FROM alembic_version;
 ## If you see a version number (e.g., 6dc2c5bfec12), Alembic is working correctly.
+
+## Step 48 — Create Tests Directory
+At project root:
+
+Código
+tests/
+Step 70 — Root Endpoint Test
+File: tests/test_main.py
+
+python
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+def test_root():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"message": "TaskFlow API running"}
+
+## If you don’t have a root endpoint, add this in app/main.py:
+
+python
+@app.get("/")
+def root():
+    return {"message": "TaskFlow API running"}
+## Step 49 — Run Tests
+In terminal:
+
+bash
+pytest
+Expected result:
+
+Código
+1 passed
+Step 72 — Registration Test
+File: tests/test_auth.py
+
+python
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+def test_register():
+    response = client.post(
+        "/register",
+        json={
+            "username": "testuser",
+            "email": "test@test.com",
+            "password": "123456"
+        }
+    )
+    assert response.status_code == 200
+Step 73 — Login Test
+Add below in tests/test_auth.py:
+
+python
+def test_login():
+    response = client.post(
+        "/login",
+        data={"username": "test@test.com", "password": "123456"}
+    )
+    assert response.status_code == 200
+
+    data = response.json()
+    assert "access_token" in data
+## Step 50 — Run Tests Again
+In terminal:
+
+bash
+pytest

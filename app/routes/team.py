@@ -22,3 +22,10 @@ def create_team(
     db.refresh(new_team)
 
     return new_team
+
+@router.get("/")
+def get_teams(
+    db: Session = Depends(get_db)
+):
+    teams = db.query(Team).all()
+    return teams

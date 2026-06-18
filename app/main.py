@@ -7,9 +7,20 @@ from app.models.team import Team
 from app.models.task import Task
 from app.routes.team import router as team_router
 from app.routes.task import router as task_router
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router)
 app.include_router(team_router)

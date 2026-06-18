@@ -13,7 +13,7 @@ class Task(Base):
     priority = Column(String, default="medium")   # ⚡ nuevo campo
     due_date = Column(Date, nullable=True)        # ⚡ nuevo campo
 
-    team_id = Column(Integer, ForeignKey("teams.id"))
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"))
 
     team = relationship("Team", back_populates="tasks")

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.schemas.user import UserCreate, UserLogin, UserResponse, PasswordChange, PasswordResetRequest, PasswordResetConfirm
 from app.models.user import User
 from app.db.dependencies import get_db
+from app.auth.dependencies import get_current_user
 from app.auth.hash import hash_password, verify_password
 from app.auth.jwt_handler import create_access_token
 from app.models.team_member import PasswordResetToken

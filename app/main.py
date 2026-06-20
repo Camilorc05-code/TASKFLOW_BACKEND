@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import engine, Base
 from app.models.user import User
-from app.models.team import Team
+from app.models.team_member import Team
 from app.models.task import Task
 
 from app.routes.auth import router as auth_router

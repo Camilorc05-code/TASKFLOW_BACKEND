@@ -2,11 +2,13 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+import sqlalchemy as sa
+from alembic import op
 
 from alembic import context
 from app.db.database import Base
 from app.models.user import User
-from app.models.team import Team
+from app.models.team_member import Team
 from app.models.task import Task
 
 # this is the Alembic Config object, which provides
@@ -80,3 +82,45 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
+
+def upgrade():
+    op.create_table('team_members',
+        sa.Column('id', sa.Integer(), primary_key=True),
+        sa.Column('team_id', sa.Integer(), sa.ForeignKey('teams.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('user_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('role', sa.String(), default='member'),
+        sa.Column('joined_at', sa.DateTime(), nullable=True),
+    )
+    op.create_table('team_invites',
+        sa.Column('id', sa.Integer(), primary_key=True),
+        sa.Column('team_id', sa.Integer(), sa.ForeignKey('teams.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('email', sa.String(), nullable=False),
+        sa.Column('token', sa.String(), unique=True, nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('accepted', sa.Integer(), default=0),
+    )
+    op.create_table('team_projects',
+        sa.Column('id', sa.Integer(), primary_key=True),
+        sa.Column('name', sa.String(), nullable=False),
+        sa.Column('description', sa.Text(), nullable=True),
+        sa.Column('team_id', sa.Integer(), sa.ForeignKey('teams.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+    )
+    op.create_table('password_reset_tokens',
+        sa.Column('id', sa.Integer(), primary_key=True),
+        sa.Column('user_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('token', sa.String(), unique=True, nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('used', sa.Integer(), default=0),
+    )
+    # Add new columns to tasks
+    op.add_column('tasks', sa.Column('assigned_to', sa.Integer(), sa.ForeignKey('users.id'), nullable=True))
+    op.add_column('tasks', sa.Column('project_id', sa.Integer(), sa.ForeignKey('team_projects.id'), nullable=True))
+
+def downgrade():
+    op.drop_column('tasks', 'project_id')
+    op.drop_column('tasks', 'assigned_to')
+    op.drop_table('password_reset_tokens')
+    op.drop_table('team_projects')
+    op.drop_table('team_invites')
+    op.drop_table('team_members')

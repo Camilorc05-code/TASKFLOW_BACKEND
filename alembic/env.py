@@ -8,7 +8,7 @@ from alembic import op
 from alembic import context
 from app.db.database import Base
 from app.models.user import User
-from app.models.team_member import Team
+from app.models.team_member import Team, TeamMember, TeamInvite, TeamProject, PasswordResetToken
 from app.models.task import Task
 
 # this is the Alembic Config object, which provides

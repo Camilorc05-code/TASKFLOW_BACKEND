@@ -1,11 +1,18 @@
-# NEW MODEL: team_members junction table + team_projects
-# Add this to your existing models folder
-
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.database import Base  # adjust import to match your project
 
+
+class Team(Base):
+
+    __tablename__ = "teams"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    name = Column(String, nullable=False)
+
+    tasks = relationship("Task", back_populates="team")
 
 class TeamMember(Base):
     __tablename__ = "team_members"

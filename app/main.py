@@ -35,3 +35,5 @@ def root():
 def profile(current_user: str = Depends(get_current_user)):
     return {"user": current_user}
 
+from app.routes.backlog import router as backlog_router
+app.include_router(backlog_router)

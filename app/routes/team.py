@@ -44,7 +44,7 @@ def _send_invite_email(to_email: str, team_name: str, invite_token: str, inviter
     smtp_port = int(os.getenv("SMTP_PORT", 587))
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASS")
-    app_url   = os.getenv("APP_URL", "http://localhost:3000")
+    app_url   = os.getenv("APP_URL", "https://taskflow-frontend-taupe.vercel.app")
 
     if not all([smtp_host, smtp_user, smtp_pass]):
         # SMTP not configured — skip silently (token still returned in response)

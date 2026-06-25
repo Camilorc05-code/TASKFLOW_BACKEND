@@ -109,19 +109,6 @@ def request_password_reset(data: PasswordResetRequest, db: Session = Depends(get
         "dev_note": "In production this token is sent by email"
     }
 
-# Enviar email con Resend
-    email_sent = send_password_reset_email(
-        to_email    = user.email,
-        reset_token = token,
-        username    = user.username,
-    )
-
-    return {
-        "message":    "If that email exists, a reset link was sent",
-        "email_sent": email_sent,
-        # En dev sin Resend configurado, devolvemos el token para poder probar
-        **({"reset_token": token, "dev_note": "Configure RESEND_API_KEY to send real emails"} if not email_sent else {}),
-    }
 
 # ── Confirm password reset ──────────────────────────────────────────────────
 @router.post("/reset-password/confirm", status_code=200)

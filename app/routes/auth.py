@@ -9,7 +9,7 @@ from app.auth.hash import verify_password, hash_password
 from app.auth.jwt_handler import create_access_token
 from app.models.user import User
 from app.models.team_member import PasswordResetToken
-from app.schemas.user import UserCreate, UserOut, Token, PasswordChange, PasswordResetRequest, PasswordResetConfirm
+from app.schemas.user import UserCreate, UserOut, Token, PasswordChange, PasswordResetRequest, PasswordResetConfirm, UserLogin
 from app.utils.email_service import send_password_reset_email
 
 router = APIRouter(tags=["auth"])
@@ -34,14 +34,16 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    data: UserLogin,
     db: Session = Depends(get_db),
 ):
-    user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(401, "Incorrect username or password")
-    token = create_access_token({"sub": user.username})
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user or not verify_password(data.password, user.hashed_password):
+        raise HTTPException(401, "Incorrect email or password")
+
+    token = create_access_token({"sub": user.email})
     return {"access_token": token, "token_type": "bearer"}
+
 
 
 # ── Cambiar contraseña (usuario logueado) ─────────────────────────────────

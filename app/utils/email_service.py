@@ -10,7 +10,7 @@ resend.api_key = os.getenv("RESEND_API_KEY", "")
 # En producción: configura tu dominio en resend.com y usa tu@tudominio.com
 FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
 FROM_NAME  = os.getenv("FROM_NAME",  "TaskFlow")
-APP_URL    = os.getenv("APP_URL",    "http://localhost:3000")
+APP_URL    = os.getenv("APP_URL",    "https://taskflow-frontend-taupe.vercel.app/")
 
 
 def send_team_invite_email(

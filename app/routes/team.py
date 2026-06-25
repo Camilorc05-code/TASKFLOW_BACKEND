@@ -176,12 +176,16 @@ def invite_member(
     db.commit()
 
     # Enviar email con Resend (no bloquea aunque falle)
-    email_sent = send_team_invite_email(
-        to_email     = data.email,
-        team_name    = team.name,
-        invite_token = token,
-        inviter_name = current_user.username,
+    
+    try: email_sent = send_team_invite_email(
+        to_email=data.email,
+        team_name=team.name,
+        invite_token=token,
+        inviter_name=current_user.username,
     )
+    except Exception as e:
+     print(f"EMAIL ERROR: {e}")
+    email_sent = False
 
     return {
         "message":        f"Invitation sent to {data.email}",

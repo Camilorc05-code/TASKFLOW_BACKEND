@@ -142,3 +142,13 @@ def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get
     reset.used = 1
     db.commit()
     return {"message": "Password reset successfully. You can now log in."}
+
+@router.get("/debug-env")
+def debug_env():
+    import os
+    return {
+        "resend_key_set": bool(os.getenv("RESEND_API_KEY")),
+        "resend_key_prefix": os.getenv("RESEND_API_KEY", "")[:6],
+        "from_email": os.getenv("FROM_EMAIL"),
+        "app_url": os.getenv("APP_URL"),
+    }

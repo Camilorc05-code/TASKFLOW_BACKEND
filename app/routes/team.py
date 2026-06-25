@@ -186,7 +186,7 @@ def invite_member(
     return {
         "message":        f"Invitation sent to {data.email}",
         "email_sent":     email_sent,
-        "invite_token":   token,           # siempre devuelto para dev/testing
+        "invite_token":   token,           
         "needs_register": existing_user is None,
         "team_name":      team.name,
     }

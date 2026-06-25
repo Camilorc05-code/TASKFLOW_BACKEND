@@ -25,8 +25,8 @@ def send_email(
             },
             json={
                 "sender": {
-                    "name": SENDER_NAME,
-                    "email": SENDER_EMAIL
+                    "name": BREVO_SENDER_NAME,
+                    "email": BREVO_SENDER_EMAIL
                 },
                 "to": [
                     {

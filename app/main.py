@@ -55,3 +55,15 @@ def root():
 @app.get("/profile")
 def profile(current_user: str = Depends(get_current_user)):
     return {"user": current_user}
+
+import os
+
+@app.get("/debug-env")
+def debug_env():
+    key = os.getenv("RESEND_API_KEY", "")
+    return {
+        "resend_key_set":    bool(key),
+        "resend_key_prefix": key[:8] if key else "VACÍA",
+        "from_email":        os.getenv("FROM_EMAIL", "NO CONFIGURADO"),
+        "app_url":           os.getenv("APP_URL",    "NO CONFIGURADO"),
+    }

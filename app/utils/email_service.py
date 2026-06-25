@@ -2,53 +2,61 @@ import os
 import httpx
  
 # ── Config desde .env ─────────────────────────────────────────────────────
-GMAIL_USER = os.getenv("GMAIL_USER", "jhojancamilorodriguez2017@gmail.com")   # tu@gmail.com
-GMAIL_PASS = os.getenv("GMAIL_PASS", "jcbx qwqi npsv fsrr")   
-APP_URL    = os.getenv("APP_URL", "https://taskflow-frontend-taupe.vercel.app/")
+GMAIL_USER = os.getenv("GMAIL_USER")   
+GMAIL_PASS = os.getenv("GMAIL_PASS")   
+APP_URL    = os.getenv("APP_URL")
 FROM_NAME  = os.getenv("FROM_NAME", "TaskFlow")
  
  
 def _send_via_gmail_api(to_email: str, subject: str, html: str) -> bool:
-    """
-    Envía email usando la API HTTP de Gmail (OAuth2 no requerido).
-    Usa httpx en modo síncrono — rápido y compatible con Render.
-    """
-    if not GMAIL_USER or not GMAIL_PASS:
-        print("[Email] GMAIL_USER o GMAIL_PASS no configurados")
-        return False
- 
-    # Construir el mensaje MIME en base64 para la API de Gmail
     import smtplib
     import ssl
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
- 
+
+    GMAIL_USER = os.getenv("GMAIL_USER")
+    GMAIL_PASS = os.getenv("GMAIL_PASS")
+
+    if not GMAIL_USER or not GMAIL_PASS:
+        print("[Email] GMAIL_USER o GMAIL_PASS no configurados")
+        return False
+
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"]    = f"{FROM_NAME} <{GMAIL_USER}>"
-        msg["To"]      = to_email
+        msg["From"] = f"{FROM_NAME} <{GMAIL_USER}>"
+        msg["To"] = to_email
+
         msg.attach(MIMEText(html, "html"))
- 
-        # Usar httpx para conectar al SMTP de Gmail via SSL
-        # Gmail puerto 465 (SSL directo, más rápido que 587+STARTTLS)
+
         context = ssl.create_default_context()
- 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=15) as server:
+
+        with smtplib.SMTP_SSL(
+            "smtp.gmail.com",
+            465,
+            context=context,
+            timeout=5
+        ) as server:
             server.login(GMAIL_USER, GMAIL_PASS)
-            server.sendmail(GMAIL_USER, to_email, msg.as_string())
- 
-        print(f"[Email] ✅ Enviado a {to_email}")
+            server.sendmail(
+                GMAIL_USER,
+                to_email,
+                msg.as_string()
+            )
+
+        print(f"[Email] ✅ Correo enviado correctamente a {to_email}")
         return True
- 
-    except smtplib.SMTPAuthenticationError:
-        print("[Email] ❌ Error de autenticación — verifica GMAIL_USER y GMAIL_PASS (App Password)")
+
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"[Email] ❌ Error de autenticación Gmail: {e}")
         return False
+
     except smtplib.SMTPException as e:
-        print(f"[Email] ❌ SMTP Error: {e}")
+        print(f"[Email] ❌ Error SMTP: {e}")
         return False
+
     except Exception as e:
-        print(f"[Email] ❌ Error: {type(e).__name__}: {e}")
+        print(f"[Email] ❌ Error general: {type(e).__name__}: {e}")
         return False
  
  

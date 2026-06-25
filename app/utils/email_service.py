@@ -1,123 +1,175 @@
 import os
-import resend
+import requests
 
-resend.api_key = os.getenv("RESEND_API_KEY")
-
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL")
+BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "TaskFlow")
 APP_URL = os.getenv(
     "APP_URL",
     "https://taskflow-frontend-taupe.vercel.app"
 )
 
-FROM_EMAIL = "TaskFlow <onboarding@resend.dev>"
+
+def send_email(
+    to_email: str,
+    subject: str,
+    html: str
+) -> bool:
+    try:
+        response = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "accept": "application/json",
+                "api-key": BREVO_API_KEY,
+                "content-type": "application/json"
+            },
+            json={
+                "sender": {
+                    "name": SENDER_NAME,
+                    "email": SENDER_EMAIL
+                },
+                "to": [
+                    {
+                        "email": to_email
+                    }
+                ],
+                "subject": subject,
+                "htmlContent": html
+            },
+            timeout=15
+        )
+
+        if response.status_code in [200, 201]:
+            print(f"[Brevo] ✅ Email enviado a {to_email}")
+            return True
+
+        print(
+            f"[Brevo] ❌ Error {response.status_code}: "
+            f"{response.text}"
+        )
+        return False
+
+    except Exception as e:
+        print(f"[Brevo] ❌ Exception: {e}")
+        return False
 
 
 def send_team_invite_email(
     to_email: str,
     team_name: str,
     invite_token: str,
-    inviter_name: str,
+    inviter_name: str
 ) -> bool:
-    try:
-        invite_url = f"{APP_URL}/invite/accept?token={invite_token}"
 
-        resend.Emails.send({
-            "from": FROM_EMAIL,
-            "to": [to_email],
-            "subject": f"{inviter_name} invited you to join {team_name}",
-            "html": f"""
-            <div style="font-family:Arial;padding:30px">
-                <h2>You've been invited to join {team_name} 🎉</h2>
+    accept_url = (
+        f"{APP_URL}/invite/accept?token={invite_token}"
+    )
 
-                <p>
-                    <strong>{inviter_name}</strong> invited you to collaborate
-                    in TaskFlow.
-                </p>
+    html = f"""
+    <div style="font-family:Arial,sans-serif;padding:40px;background:#f5f5f5">
+        <div style="max-width:600px;margin:auto;background:white;
+                    padding:40px;border-radius:12px">
 
-                <p>
-                    Click the button below to accept the invitation:
-                </p>
+            <h1>⚡ TaskFlow</h1>
 
-                <a
-                    href="{invite_url}"
-                    style="
-                        display:inline-block;
-                        padding:14px 28px;
-                        background:#7c6dfa;
-                        color:white;
-                        text-decoration:none;
-                        border-radius:8px;
-                        font-weight:bold;
-                    "
-                >
-                    Accept Invitation
-                </a>
+            <h2>You've been invited to join {team_name}</h2>
 
-                <br><br>
+            <p>
+                <strong>{inviter_name}</strong>
+                invited you to collaborate in
+                <strong>{team_name}</strong>.
+            </p>
 
-                <p>If the button doesn't work:</p>
+            <p>
+                Click the button below to accept the invitation:
+            </p>
 
-                <p>{invite_url}</p>
-            </div>
-            """
-        })
+            <a href="{accept_url}"
+               style="
+                    display:inline-block;
+                    background:#7c6dfa;
+                    color:white;
+                    text-decoration:none;
+                    padding:14px 24px;
+                    border-radius:8px;
+                    font-weight:bold;
+               ">
+               Accept Invitation
+            </a>
 
-        print(f"[Email] Invitation sent to {to_email}")
-        return True
+            <p style="margin-top:30px;font-size:12px;color:#777">
+                If the button does not work, copy this URL:
+            </p>
 
-    except Exception as e:
-        print(f"[Resend] ERROR: {e}")
-        return False
+            <p style="font-size:12px">
+                {accept_url}
+            </p>
+
+        </div>
+    </div>
+    """
+
+    return send_email(
+        to_email=to_email,
+        subject=f"Invitation to join {team_name} on TaskFlow",
+        html=html
+    )
 
 
 def send_password_reset_email(
     to_email: str,
     reset_token: str,
-    username: str,
+    username: str
 ) -> bool:
-    try:
-        reset_url = f"{APP_URL}/reset-password?token={reset_token}"
 
-        resend.Emails.send({
-            "from": FROM_EMAIL,
-            "to": [to_email],
-            "subject": "Reset your TaskFlow password",
-            "html": f"""
-            <div style="font-family:Arial;padding:30px">
-                <h2>Password Reset</h2>
+    reset_url = (
+        f"{APP_URL}/reset-password?token={reset_token}"
+    )
 
-                <p>Hello {username},</p>
+    html = f"""
+    <div style="font-family:Arial,sans-serif;padding:40px;background:#f5f5f5">
+        <div style="max-width:600px;margin:auto;background:white;
+                    padding:40px;border-radius:12px">
 
-                <p>
-                    Click the button below to reset your password:
-                </p>
+            <h1>🔐 TaskFlow</h1>
 
-                <a
-                    href="{reset_url}"
-                    style="
-                        display:inline-block;
-                        padding:14px 28px;
-                        background:#7c6dfa;
-                        color:white;
-                        text-decoration:none;
-                        border-radius:8px;
-                        font-weight:bold;
-                    "
-                >
-                    Reset Password
-                </a>
+            <h2>Password Reset</h2>
 
-                <br><br>
+            <p>
+                Hello <strong>{username}</strong>,
+            </p>
 
-                <p>If the button doesn't work:</p>
+            <p>
+                We received a request to reset your password.
+            </p>
 
-                <p>{reset_url}</p>
-            </div>
-            """
-        })
+            <a href="{reset_url}"
+               style="
+                    display:inline-block;
+                    background:#7c6dfa;
+                    color:white;
+                    text-decoration:none;
+                    padding:14px 24px;
+                    border-radius:8px;
+                    font-weight:bold;
+               ">
+               Reset Password
+            </a>
 
-        print(f"[Email] Password reset email sent to {to_email}")
-        return True
+            <p style="margin-top:30px;font-size:12px;color:#777">
+                If the button does not work, copy this URL:
+            </p>
 
-    except Exception as e:
-        print(f"[Resend] ERROR: {e}")
-        return False
+            <p style="font-size:12px">
+                {reset_url}
+            </p>
+
+        </div>
+    </div>
+    """
+
+    return send_email(
+        to_email=to_email,
+        subject="Reset your TaskFlow password",
+        html=html
+    )

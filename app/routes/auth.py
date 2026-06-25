@@ -1,52 +1,71 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-import secrets
-
+from app.schemas.user import UserCreate, UserLogin, UserResponse, PasswordChange, PasswordResetRequest, PasswordResetConfirm
+from app.models.user import User
 from app.db.dependencies import get_db
 from app.auth.dependencies import get_current_user
-from app.auth.hash import verify_password, hash_password
+from app.auth.hash import hash_password, verify_password
 from app.auth.jwt_handler import create_access_token
-from app.models.user import User
 from app.models.team_member import PasswordResetToken
-from app.schemas.user import UserCreate, UserOut, Token, PasswordChange, PasswordResetRequest, PasswordResetConfirm, UserLogin
+import secrets
 from app.utils.email_service import send_password_reset_email
+
 
 router = APIRouter(tags=["auth"])
 
+@router.post("/register")
+def register(user: UserCreate, db: Session = Depends(get_db)):
 
-@router.post("/register", response_model=UserOut, status_code=201)
-def register(data: UserCreate, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.username == data.username).first():
-        raise HTTPException(400, "Username already taken")
-    if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(400, "Email already registered")
-    user = User(
-        username        = data.username,
-        email           = data.email,
-        hashed_password = hash_password(data.password),
+    hashed_password = hash_password(user.password)
+
+    new_user = User(
+        username=user.username,
+        email=user.email,
+        password=hashed_password
     )
-    db.add(user)
+
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
-    return user
+    db.refresh(new_user)
 
+    return {
+        "message": "User created successfully"
+    }
 
-@router.post("/login", response_model=Token)
-def login(
-    data: UserLogin,
-    db: Session = Depends(get_db),
-):
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user or not verify_password(data.password, user.hashed_password):
-        raise HTTPException(401, "Incorrect email or password")
+@router.post("/login")
+def login(user: UserLogin, db: Session = Depends(get_db)):
 
-    token = create_access_token({"sub": user.email})
-    return {"access_token": token, "token_type": "bearer"}
+    db_user = db.query(User).filter(
+        User.email == user.email
+    ).first()
 
+    if not db_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
 
+    if not verify_password(
+        user.password,
+        db_user.password
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
 
-# ── Cambiar contraseña (usuario logueado) ─────────────────────────────────
+    access_token = create_access_token(
+        data={
+            "sub": db_user.email
+        }
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+# ── Change password (user must be logged in) ────────────────────────────────
 @router.post("/change-password", status_code=200)
 def change_password(
     data: PasswordChange,
@@ -54,37 +73,43 @@ def change_password(
     current_user: User = Depends(get_current_user),
 ):
     if not verify_password(data.current_password, current_user.hashed_password):
-        raise HTTPException(400, "Current password is incorrect")
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
     if len(data.new_password) < 6:
-        raise HTTPException(400, "Password must be at least 6 characters")
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     current_user.hashed_password = hash_password(data.new_password)
     db.commit()
     return {"message": "Password changed successfully"}
 
 
-# ── Solicitar reset de contraseña (envía email con Resend) ─────────────────
+# ── Request password reset (sends token — in production send via email) ─────
 @router.post("/reset-password/request", status_code=200)
-def request_password_reset(
-    data: PasswordResetRequest,
-    db: Session = Depends(get_db),
-):
+def request_password_reset(data: PasswordResetRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
-    # Siempre 200 para no revelar si el email existe
+    # Always return 200 to avoid email enumeration
     if not user:
         return {"message": "If that email exists, a reset link was sent"}
 
-    # Invalidar tokens anteriores
+    # Invalidate old tokens
     db.query(PasswordResetToken).filter(
         PasswordResetToken.user_id == user.id,
-        PasswordResetToken.used    == 0,
+        PasswordResetToken.used == 0
     ).update({"used": 1})
     db.commit()
 
     token = secrets.token_urlsafe(32)
-    db.add(PasswordResetToken(user_id=user.id, token=token))
+    reset = PasswordResetToken(user_id=user.id, token=token)
+    db.add(reset)
     db.commit()
 
-    # Enviar email con Resend
+    # In production: send email with reset link
+    # For now: return token in response (dev mode)
+    return {
+        "message": "Reset token generated",
+        "reset_token": token,          # REMOVE in production, use email instead
+        "dev_note": "In production this token is sent by email"
+    }
+
+# Enviar email con Resend
     email_sent = send_password_reset_email(
         to_email    = user.email,
         reset_token = token,
@@ -98,21 +123,19 @@ def request_password_reset(
         **({"reset_token": token, "dev_note": "Configure RESEND_API_KEY to send real emails"} if not email_sent else {}),
     }
 
-
-# ── Confirmar reset de contraseña ─────────────────────────────────────────
+# ── Confirm password reset ──────────────────────────────────────────────────
 @router.post("/reset-password/confirm", status_code=200)
-def confirm_password_reset(
-    data: PasswordResetConfirm,
-    db: Session = Depends(get_db),
-):
+def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get_db)):
     reset = db.query(PasswordResetToken).filter(
         PasswordResetToken.token == data.token,
-        PasswordResetToken.used  == 0,
+        PasswordResetToken.used == 0
     ).first()
+
     if not reset:
-        raise HTTPException(400, "Invalid or expired reset token")
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
     if len(data.new_password) < 6:
-        raise HTTPException(400, "Password must be at least 6 characters")
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
     user = db.query(User).filter(User.id == reset.user_id).first()
     user.hashed_password = hash_password(data.new_password)

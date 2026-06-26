@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas.user import UserCreate, UserLogin, UserResponse, PasswordChange, PasswordResetRequest, PasswordResetConfirm
+from app.schemas.user import UserCreate, UserLogin, UserResponse, PasswordChange, PasswordResetRequest, PasswordResetConfirm, UserUpdate
 from app.models.user import User
 from app.db.dependencies import get_db
 from app.auth.dependencies import get_current_user
@@ -129,6 +129,7 @@ def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get
     reset.used = 1
     db.commit()
     return {"message": "Password reset successfully. You can now log in."}
+
 # ── Update current user profile ────────────────────────────────────────────
 @router.put("/users/me", status_code=200)
 def update_profile(

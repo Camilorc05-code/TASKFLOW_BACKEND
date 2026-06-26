@@ -129,4 +129,50 @@ def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get
     reset.used = 1
     db.commit()
     return {"message": "Password reset successfully. You can now log in."}
+# ── Update current user profile ────────────────────────────────────────────
+@router.put("/users/me", status_code=200)
+def update_profile(
+    data: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
 
+    # verificar username duplicado
+    if data.username and data.username != current_user.username:
+        existing_username = db.query(User).filter(
+            User.username == data.username
+        ).first()
+
+        if existing_username:
+            raise HTTPException(
+                status_code=400,
+                detail="Username already exists"
+            )
+
+        current_user.username = data.username
+
+    # verificar email duplicado
+    if data.email and data.email != current_user.email:
+        existing_email = db.query(User).filter(
+            User.email == data.email
+        ).first()
+
+        if existing_email:
+            raise HTTPException(
+                status_code=400,
+                detail="Email already exists"
+            )
+
+        current_user.email = data.email
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "message": "Profile updated successfully",
+        "user": {
+            "id": current_user.id,
+            "username": current_user.username,
+            "email": current_user.email
+        }
+    }

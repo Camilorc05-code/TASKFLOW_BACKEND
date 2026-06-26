@@ -77,14 +77,30 @@ def change_password(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if not verify_password(data.current_password, current_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Current password is incorrect")
-    if len(data.new_password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-    current_user.hashed_password = hash_password(data.new_password)
-    db.commit()
-    return {"message": "Password changed successfully"}
+    if not verify_password(
+        data.current_password,
+        current_user.password
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Current password is incorrect"
+        )
 
+    if len(data.new_password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters"
+        )
+
+    current_user.password = hash_password(
+        data.new_password
+    )
+
+    db.commit()
+
+    return {
+        "message": "Password changed successfully"
+    }
 
 # ── Request password reset (sends token — in production send via email) ─────
 @router.post("/reset-password/request", status_code=200)
@@ -117,23 +133,42 @@ def request_password_reset(data: PasswordResetRequest, db: Session = Depends(get
 
 # ── Confirm password reset ──────────────────────────────────────────────────
 @router.post("/reset-password/confirm", status_code=200)
-def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get_db)):
+def confirm_password_reset(
+    data: PasswordResetConfirm,
+    db: Session = Depends(get_db)
+):
     reset = db.query(PasswordResetToken).filter(
         PasswordResetToken.token == data.token,
         PasswordResetToken.used == 0
     ).first()
 
     if not reset:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired reset token"
+        )
 
     if len(data.new_password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters"
+        )
 
-    user = db.query(User).filter(User.id == reset.user_id).first()
-    user.hashed_password = hash_password(data.new_password)
+    user = db.query(User).filter(
+        User.id == reset.user_id
+    ).first()
+
+    user.password = hash_password(
+        data.new_password
+    )
+
     reset.used = 1
+
     db.commit()
-    return {"message": "Password reset successfully. You can now log in."}
+
+    return {
+        "message": "Password reset successfully. You can now log in."
+    }
 
 # ── Update current user profile ────────────────────────────────────────────
 @router.put("/users/me", status_code=200)

@@ -61,14 +61,9 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     )
 
     return {
-    "access_token": access_token,
-    "token_type": "bearer",
-    "user": {
-        "id": db_user.id,
-        "username": db_user.username,
-        "email": db_user.email
+        "access_token": access_token,
+        "token_type": "bearer"
     }
-}
 
 # ── Change password (user must be logged in) ────────────────────────────────
 @router.post("/change-password", status_code=200)

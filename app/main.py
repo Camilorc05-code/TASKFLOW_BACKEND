@@ -67,3 +67,7 @@ def debug_env():
         "from_email":        os.getenv("FROM_EMAIL", "NO CONFIGURADO"),
         "app_url":           os.getenv("APP_URL",    "NO CONFIGURADO"),
     }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

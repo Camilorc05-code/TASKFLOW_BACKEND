@@ -68,6 +68,11 @@ def debug_env():
         "app_url":           os.getenv("APP_URL",    "NO CONFIGURADO"),
     }
 
+from fastapi.responses import JSONResponse
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.head("/health")
+def health_head():
+    return JSONResponse(content=None, status_code=200)

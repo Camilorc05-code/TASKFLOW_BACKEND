@@ -17,9 +17,6 @@ from app.auth.dependencies import get_current_user
 app = FastAPI()
 
 
-# ==========================
-# CORS
-# ==========================
 origins = [
     "http://localhost:3000",
     "http://localhost:5173",
@@ -35,18 +32,12 @@ app.add_middleware(
 )
 
 
-# ==========================
-# Routers
-# ==========================
 app.include_router(auth_router)
 app.include_router(team_router)
 app.include_router(task_router)
 app.include_router(backlog_router)
 
 
-# ==========================
-# Endpoints básicos
-# ==========================
 @app.get("/")
 def root():
     return {"message": "TaskFlow API running"}

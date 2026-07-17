@@ -38,10 +38,6 @@ def _assert_member(db, team_id, user_id):
         raise HTTPException(403, "You are not a member of this team")
 
 
-# ════════════════════════════════════════════════
-#  TEAM CRUD
-# ════════════════════════════════════════════════
-
 @router.post("/", response_model=TeamOut, status_code=201)
 def create_team(
     data: TeamCreate,
@@ -93,10 +89,6 @@ def delete_team(
     db.commit()
 
 
-# ════════════════════════════════════════════════
-#  MEMBERS
-# ════════════════════════════════════════════════
-
 @router.get("/{team_id}/members", response_model=List[TeamMemberOut])
 def list_members(
     team_id: int,
@@ -136,10 +128,6 @@ def remove_member(
         db.delete(m)
         db.commit()
 
-
-# ════════════════════════════════════════════════
-#  INVITATIONS — con Resend, funciona en producción
-# ════════════════════════════════════════════════
 
 @router.post("/{team_id}/invite", status_code=200)
 def invite_member(
@@ -255,10 +243,6 @@ def accept_invite(
     db.commit()
     return {"message": "You have joined the team!", "team_id": invite.team_id}
 
-
-# ════════════════════════════════════════════════
-#  TEAM PROJECTS
-# ════════════════════════════════════════════════
 
 @router.post("/{team_id}/projects", response_model=TeamProjectOut, status_code=201)
 def create_project(

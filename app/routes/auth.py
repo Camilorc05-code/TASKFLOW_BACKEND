@@ -70,7 +70,6 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     }
 }
 
-# ── Change password (user must be logged in) ────────────────────────────────
 @router.post("/change-password", status_code=200)
 def change_password(
     data: PasswordChange,
@@ -102,15 +101,12 @@ def change_password(
         "message": "Password changed successfully"
     }
 
-# ── Request password reset (sends token — in production send via email) ─────
 @router.post("/reset-password/request", status_code=200)
 def request_password_reset(data: PasswordResetRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
-    # Always return 200 to avoid email enumeration
     if not user:
         return {"message": "If that email exists, a reset link was sent"}
 
-    # Invalidate old tokens
     db.query(PasswordResetToken).filter(
         PasswordResetToken.user_id == user.id,
         PasswordResetToken.used == 0
@@ -122,16 +118,12 @@ def request_password_reset(data: PasswordResetRequest, db: Session = Depends(get
     db.add(reset)
     db.commit()
 
-    # In production: send email with reset link
-    # For now: return token in response (dev mode)
     return {
         "message": "Reset token generated",
-        "reset_token": token,          # REMOVE in production, use email instead
-        "dev_note": "In production this token is sent by email"
+        "reset_token": token,
     }
 
 
-# ── Confirm password reset ──────────────────────────────────────────────────
 @router.post("/reset-password/confirm", status_code=200)
 def confirm_password_reset(
     data: PasswordResetConfirm,
@@ -170,7 +162,6 @@ def confirm_password_reset(
         "message": "Password reset successfully. You can now log in."
     }
 
-# ── Update current user profile ────────────────────────────────────────────
 @router.put("/users/me", status_code=200)
 def update_profile(
     data: UserUpdate,

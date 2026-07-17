@@ -15,10 +15,6 @@ from app.schemas.backlog import (
 router = APIRouter(prefix="/backlog", tags=["backlog"])
 
 
-# ════════════════════════════════════════════════════════════
-#  SPRINTS
-# ════════════════════════════════════════════════════════════
-
 @router.post("/sprints", response_model=SprintOut, status_code=201)
 def create_sprint(
     data: SprintCreate,
@@ -82,15 +78,10 @@ def delete_sprint(
     sprint = db.query(Sprint).filter(Sprint.id == sprint_id, Sprint.owner_id == current_user.id).first()
     if not sprint:
         raise HTTPException(404, "Sprint not found")
-    # Move items back to backlog before deleting sprint
     db.query(BacklogItem).filter(BacklogItem.sprint_id == sprint_id).update({"sprint_id": None, "status": "backlog"})
     db.delete(sprint)
     db.commit()
 
-
-# ════════════════════════════════════════════════════════════
-#  BACKLOG ITEMS
-# ════════════════════════════════════════════════════════════
 
 @router.post("/items", response_model=BacklogItemOut, status_code=201)
 def create_item(
@@ -159,7 +150,6 @@ def move_item_to_sprint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Move a backlog item into a sprint (or back to backlog if sprint_id=None)."""
     item = db.query(BacklogItem).filter(BacklogItem.id == item_id, BacklogItem.owner_id == current_user.id).first()
     if not item:
         raise HTTPException(404, "Item not found")
@@ -183,10 +173,6 @@ def delete_item(
     db.commit()
 
 
-# ════════════════════════════════════════════════════════════
-#  CALENDAR  — tasks + backlog items with due dates
-# ════════════════════════════════════════════════════════════
-
 @router.get("/calendar")
 def get_calendar_events(
     year:  int,
@@ -194,19 +180,13 @@ def get_calendar_events(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Returns all events for a given month:
-      - Backlog items with due dates (via end_date on sprint or item created_at)
-      - Sprints overlapping the month
-      - Regular tasks with due_date (from existing tasks table)
-    """
     from datetime import date as dt
     import calendar as cal
 
     first_day = dt(year, month, 1)
     last_day  = dt(year, month, cal.monthrange(year, month)[1])
 
-    # Sprints overlapping this month
+    # Sprints que se superponen con este mes
     sprints = db.query(Sprint).filter(
         Sprint.owner_id == current_user.id,
         Sprint.start_date <= last_day,
@@ -226,10 +206,9 @@ def get_calendar_events(
         for s in sprints if s.start_date and s.end_date
     ]
 
-    # Try to pull tasks with due_date (uses existing Task model — adjust import)
     task_events = []
     try:
-        from app.models.task import Task   # adjust if your model is named differently
+        from app.models.task import Task
         tasks = db.query(Task).filter(
             Task.owner_id == current_user.id,
             Task.due_date >= first_day,
@@ -247,9 +226,8 @@ def get_calendar_events(
             for t in tasks
         ]
     except Exception:
-        pass   # Task model path may differ — safe to skip
+        pass
 
-    # Backlog items that belong to a sprint ending this month
     backlog_events = []
     for s in sprints:
         items = db.query(BacklogItem).filter(BacklogItem.sprint_id == s.id).all()

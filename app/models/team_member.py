@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from app.db.database import Base  # adjust import to match your project
+from app.db.database import Base
 
 
 class Team(Base):

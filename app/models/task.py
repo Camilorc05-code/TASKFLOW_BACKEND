@@ -10,8 +10,8 @@ class Task(Base):
     description = Column(String)
 
     status = Column(String, default="pending")
-    priority = Column(String, default="medium")   # ⚡ nuevo campo
-    due_date = Column(Date, nullable=True)        # ⚡ nuevo campo
+    priority = Column(String, default="medium")
+    due_date = Column(Date, nullable=True)
 
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"))

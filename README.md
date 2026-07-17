@@ -1,22 +1,6 @@
 # TaskFlow Backend API
 
-Backend REST API built with FastAPI, PostgreSQL, SQLAlchemy, JWT Authentication, Alembic, Docker, and Pytest.
-
----
-
-# Features
-
-* User registration and login
-* JWT authentication
-* Password hashing with bcrypt
-* Protected routes
-* Teams and tasks management
-* Task ownership validation
-* Pagination and filtering
-* PostgreSQL integration
-* Alembic migrations
-* Docker support
-* Automated tests with pytest
+REST API para la aplicación de gestión de tareas TaskFlow. FastAPI + PostgreSQL + SQLAlchemy.
 
 ---
 
@@ -24,7 +8,7 @@ Backend REST API built with FastAPI, PostgreSQL, SQLAlchemy, JWT Authentication,
 
 * Python 3.11
 * FastAPI
-* PostgreSQL
+* PostgreSQL (Supabase)
 * SQLAlchemy
 * Alembic
 * Docker
@@ -38,89 +22,54 @@ Backend REST API built with FastAPI, PostgreSQL, SQLAlchemy, JWT Authentication,
 
 ```bash
 app/
-│
 ├── auth/
 │   ├── dependencies.py
 │   ├── hash.py
 │   └── jwt_handler.py
-│
 ├── db/
 │   ├── database.py
 │   └── dependencies.py
-│
 ├── models/
 │   ├── user.py
-│   ├── team.py
-│   └── task.py
-│
+│   ├── team_member.py
+│   ├── task.py
+│   └── backlog.py
 ├── routes/
 │   ├── auth.py
 │   ├── team.py
-│   └── task.py
-│
+│   ├── task.py
+│   └── backlog.py
 ├── schemas/
 │   ├── user.py
 │   ├── team.py
-│   └── task.py
-│
+│   ├── task.py
+│   └── backlog.py
 ├── main.py
-│
 tests/
-│
 alembic/
-│
 Dockerfile
 docker-compose.yml
 requirements.txt
-.env
-README.md
+.env.example
 ```
 
 ---
 
-# Installation
-
-## 1. Clone Repository
+# Instalación
 
 ```bash
-git https://github.com/Camilorc05-code/TASKFLOW_BACKEND
-```
-
----
-
-## 2. Create Virtual Environment
-
-```bash
+git clone https://github.com/Camilorc05-code/TASKFLOW_BACKEND
+cd TASKFLOW_BACKEND
 python -m venv venv
-```
-
-Activate virtual environment:
-
-### macOS/Linux
-
-```bash
-source venv/bin/activate
-```
-
-### Windows
-
-```bash
-venv\Scripts\activate
-```
-
----
-
-## 3. Install Dependencies
-
-```bash
+source venv/bin/activate   # macOS/Linux
 pip install -r requirements.txt
 ```
 
 ---
 
-# Environment Variables
+# Variables de entorno
 
-Create a `.env` file (see `.env.example`):
+Crear un archivo `.env` (ver `.env.example`):
 
 ```env
 DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-us-west-2.pooler.supabase.com:6543/postgres
@@ -135,29 +84,17 @@ APP_URL=https://taskflow-frontend-taupe.vercel.app
 
 ---
 
-# Run Project
+# Ejecutar
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Server:
-
-```bash
-http://127.0.0.1:8000
-```
-
-Swagger Docs:
-
-```bash
 http://127.0.0.1:8000/docs
-```
 
 ---
 
-# Docker Setup
-
-Build and run containers:
+# Docker
 
 ```bash
 docker-compose up --build
@@ -165,111 +102,48 @@ docker-compose up --build
 
 ---
 
-# Database Migrations
-
-## Create migration
+# Migraciones
 
 ```bash
-alembic revision --autogenerate -m "message"
-```
-
-## Apply migration
-
-```bash
+alembic revision --autogenerate -m "mensaje"
 alembic upgrade head
 ```
 
 ---
 
-# Authentication
+# Endpoints
 
-This API uses JWT authentication.
-
-## Login
-
-```http
-POST /login
-```
-
-Example response:
-
-```json
-{
-  "access_token": "your_token",
-  "token_type": "bearer"
-}
-```
-
-Use the token in Swagger Authorize button:
-
-```bash
-Bearer your_token
-```
-
----
-
-# Main Endpoints
-
-## Auth
-
-| Method | Endpoint  | Description   |
-| ------ | --------- | ------------- |
-| POST   | /register | Register user |
-| POST   | /login    | Login user    |
-
----
-
-## Teams
-
-| Method | Endpoint | Description |
-| ------ | -------- | ----------- |
-| POST   | /teams/  | Create team |
-
----
-
-## Tasks
-
-| Method | Endpoint    | Description |
-| ------ | ----------- | ----------- |
-| POST   | /tasks/     | Create task |
-| GET    | /tasks/     | List tasks  |
-| GET    | /tasks/{id} | Get task    |
-| PUT    | /tasks/{id} | Update task |
-| DELETE | /tasks/{id} | Delete task |
+| Method | Endpoint            | Descripción         |
+| ------ | ------------------- | ------------------- |
+| POST   | /register           | Registrar usuario   |
+| POST   | /login              | Login               |
+| POST   | /change-password    | Cambiar contraseña  |
+| POST   | /reset-password/*   | Reset de contraseña |
+| PUT    | /users/me           | Actualizar perfil   |
+| POST   | /teams/             | Crear equipo        |
+| GET    | /teams/             | Listar equipos      |
+| DELETE | /teams/{id}         | Eliminar equipo     |
+| POST   | /tasks/             | Crear tarea         |
+| GET    | /tasks/             | Listar tareas       |
+| PUT    | /tasks/{id}         | Actualizar tarea    |
+| DELETE | /tasks/{id}         | Eliminar tarea      |
+| POST   | /backlog/sprints    | Crear sprint        |
+| GET    | /backlog/sprints    | Listar sprints      |
+| POST   | /backlog/items      | Crear item backlog  |
+| GET    | /backlog/calendar   | Eventos calendario  |
 
 ---
 
 # Testing
 
-Run tests:
-
 ```bash
 PYTHONPATH=. pytest
 ```
 
-Expected result:
-
-```bash
-3 passed
-```
-
 ---
 
-# Future Improvements
-
-* Refresh tokens
-* Role-based permissions
-* Email verification
-* Password reset
-* Redis caching
-* Background tasks
-* CI/CD pipelines
-
----
-
-# Author
+# Autor
 
 Camilo Rodriguez
 
-GitHub:
-https://github.com/TU_USUARIO
+https://github.com/Camilorc05-code

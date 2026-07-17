@@ -120,13 +120,17 @@ pip install -r requirements.txt
 
 # Environment Variables
 
-Create a `.env` file:
+Create a `.env` file (see `.env.example`):
 
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost/taskflow_db
+DATABASE_URL=postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-us-west-2.pooler.supabase.com:6543/postgres
 SECRET_KEY=supersecretkey
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
+BREVO_API_KEY=your_brevo_api_key
+BREVO_SENDER_EMAIL=your_email@example.com
+BREVO_SENDER_NAME=TaskFlow
+APP_URL=https://taskflow-frontend-taupe.vercel.app
 ```
 
 ---

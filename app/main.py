@@ -21,6 +21,7 @@ origins = [
     "http://localhost:3000",
     "http://localhost:5173",
     "https://taskflow-frontend-taupe.vercel.app",
+    "https://taskflow-camilorc-05.vercel.app",
     "https://taskflowbackend-production-9cd3.up.railway.app",
 ]
 

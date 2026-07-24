@@ -20,7 +20,8 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",
     "http://localhost:5173",
-    "https://taskflow-frontend-taupe.vercel.app"
+    "https://taskflow-frontend-taupe.vercel.app",
+    "https://taskflowbackend-production-9cd3.up.railway.app",
 ]
 
 app.add_middleware(
